@@ -11,7 +11,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 SERVER_URI = f"{environ.get("SERVER_HOST")}:{environ.get("SERVER_PORT")}"
 INTERNAL_SECRET = environ.get("INTERNAL_SECRET")
-TOKEN_EXPIRATION = timedelta(minutes=3)
+TOKEN_EXPIRATION = timedelta(minutes=1)
 
 
 def generate_jwt(user_credentials: dict[str, str]) -> str:
@@ -44,7 +44,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             headers={
                 "Authorization": f"Bearer {generate_jwt(user_credentials)}",
                 "Content-Type": "application/json",
-            },
+            }
         )
 
     await context.bot.send_message(
@@ -52,11 +52,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         parse_mode="MarkdownV2",
         text=f"""
 ```json
-{dumps(user_credentials, indent=4)}
+{dumps(response.json(), indent=4)}
 ```
         """
     )
-
 
 
 app = ApplicationBuilder().token(environ.get("TELEGRAM_BOT_TOKEN")).build()
