@@ -8,6 +8,10 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 
+SERVER_URI = f"{environ.get("SERVER_HOST")}:{environ.get("SERVER_PORT")}"
+INTERNAL_SECRET = environ.get("INTERNAL_SECRET")
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_credentials = {
         "TelegramId": str(update.effective_chat.id),
@@ -17,7 +21,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     async with AsyncClient() as client:
         response = await client.request(
             method="POST",
-            url="http://temptake-server.duckdns.org:8080/api/user",
+            url=f"http://{SERVER_URI}/api/user",
             json=user_credentials,
             headers={
                 # "Authorization": f"Bearer {environ.get('API_KEY')}",
