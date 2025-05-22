@@ -58,8 +58,54 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_credentials = {
+        "TelegramId": str(update.effective_chat.id),
+        "TelegramUsername": update.effective_chat.username,
+    }
+
+    async with AsyncClient() as client:
+        response = await client.request(
+            method="GET",
+            url=f"http://{SERVER_URI}/api/user/group",
+            json=user_credentials,
+            headers={
+                "Authorization": f"Bearer {generate_jwt(user_credentials)}",
+                "Content-Type": "application/json",
+            }
+        )
+
+    manager = {
+        "GroupId": response.json()[0]["id"],
+        "ManagerMac": context.args[0].upper(),
+    }
+
+    async with AsyncClient() as client:
+        response = await client.request(
+            method="POST",
+            url=f"http://{SERVER_URI}/api/group/manager/add",
+            json=manager,
+            headers={
+                "Authorization": f"Bearer {generate_jwt(user_credentials)}",
+                "Content-Type": "application/json",
+            }
+        )
+
+    if response.status_code == 200:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Manager added successfully."
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Failed to add manager {response.status_code}.\n{response.text}"
+        )
+
+
 app = ApplicationBuilder().token(environ.get("TELEGRAM_BOT_TOKEN")).build()
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("manager", add_manager))
 
 if __name__ == "__main__":
     app.run_polling()
