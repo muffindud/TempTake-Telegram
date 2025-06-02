@@ -52,7 +52,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     response = await make_request(
         method="POST",
-        url=f"{URL_PREFIX}{SERVER_URI}/api/group/manager/add",
+        url=f"{URL_PREFIX}{SERVER_URI}/api/group/manager",
         update=update,
         json=manager
     )
