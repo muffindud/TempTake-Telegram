@@ -37,7 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
         method="GET",
-        url=f"http://{SERVER_URI}/api/user/group",
+        url=f"{URL_PREFIX}{SERVER_URI}/api/user/groups",
         update=update,
         json=get_user_credentials(update)
     )
@@ -46,13 +46,13 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     manager = {
-        "GroupId": response.json()[0]["id"],
+        "GroupId": response.json()[0][ID_KEY],
         "ManagerMac": context.args[0].upper(),
     }
 
     response = await make_request(
         method="POST",
-        url=f"http://{SERVER_URI}/api/group/manager/add",
+        url=f"{URL_PREFIX}{SERVER_URI}/api/group/manager/add",
         update=update,
         json=manager
     )
@@ -70,7 +70,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
         method="GET",
-        url=f"http://{SERVER_URI}/api/user/groups",
+        url=f"{URL_PREFIX}{SERVER_URI}/api/user/groups",
         update=update,
         json=get_user_credentials(update)
     )
