@@ -1,5 +1,6 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 
+from service.telegram.buttons import button_handler
 from service.telegram.commands import *
 
 from config import TELEGRAM_BOT_TOKEN
