@@ -7,7 +7,7 @@ from json import dumps
 from typing import Any
 from unicodedata import category
 
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 from jwt import encode
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
@@ -71,6 +71,63 @@ def get_user_credentials(update: Update) -> dict[str, str]:
 def split_payload(payload: str) -> tuple[str, ...]:
     return tuple(payload.split(IDENTIFIER_DELIMITER))
 
+
+async def make_request(
+    method: str,
+    url: str,
+    update: Update,
+    json: dict[str, Any] | None = None,
+):
+    async with AsyncClient() as client:
+        response = await client.request(
+            method=method,
+            url=url,
+            json=json,
+            headers={
+                "Authorization": f"Bearer {generate_jwt(get_user_credentials(update))}",
+                "Content-Type": "application/json",
+            }
+        )
+    return response
+
+
+async def reply_if_error(response: Response, update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    if response.status_code // 100 != 2:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Error {response.status_code}.\n{response.text}"
+        )
+        return True
+    return False
+
+
+async def send_inline_keyboard(
+    response: Response,
+    message: str,
+    identifier: str,
+    json_id_key: str,
+    json_name_key: str,
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    json = response.json()
+
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                text=f"{item[json_name_key]}",
+                callback_data=f"{identifier}{IDENTIFIER_DELIMITER}{item[json_id_key]}{IDENTIFIER_DELIMITER}{item[json_name_key]}"
+            )
+        ] for item in json
+    ]
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+
 # Register the user
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     async with AsyncClient() as client:
@@ -108,11 +165,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             }
         )
 
-    if response.status_code // 200:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f"Failed to retrieve group information {response.status_code}.\n{response.text}"
-        )
+    if await reply_if_error(response, update, context):
         return
 
     manager = {
@@ -131,11 +184,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             }
         )
 
-    if response.status_code // 100 != 2:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f"Failed to add manager {response.status_code}.\n{response.text}"
-        )
+    if await reply_if_error(response, update, context):
         return
 
     await context.bot.send_message(
@@ -144,25 +193,16 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     )
 
 
-# Get the groups
+# Get the groups the user is a member of
 async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Get the groups the user belongs to
-    async with AsyncClient() as client:
-        response = await client.request(
-            method="GET",
-            url=f"http://{SERVER_URI}/api/user/groups",
-            json=get_user_credentials(update),
-            headers={
-                "Authorization": f"Bearer {generate_jwt(get_user_credentials(update))}",
-                "Content-Type": "application/json",
-            }
-        )
+    response = await make_request(
+        method="GET",
+        url=f"http://{SERVER_URI}/api/user/groups",
+        update=update,
+        json=get_user_credentials(update)
+    )
 
-    if response.status_code // 100 != 2:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f"Failed to retrieve groups {response.status_code}.\n{response.text}"
-        )
+    if await reply_if_error(response, update, context):
         return
 
     groups = response.json()
@@ -174,23 +214,15 @@ async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
         return
 
-    # Create an inline keyboard with the groups
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                text=group[GROUP_NAME_KEY],
-                callback_data=f"{GROUP_IDENTIFIER}{IDENTIFIER_DELIMITER}{group[ID_KEY]}{IDENTIFIER_DELIMITER}{group[GROUP_NAME_KEY]}",
-            )
-        ] for group in groups
-    ]
-
     message = "You are a member of the following groups:\n"
-    inline_keyboard = InlineKeyboardMarkup(keyboard)
-
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=message,
-        reply_markup=inline_keyboard
+    await send_inline_keyboard(
+        response=response,
+        message=message,
+        identifier=GROUP_IDENTIFIER,
+        json_id_key=ID_KEY,
+        json_name_key=GROUP_NAME_KEY,
+        update=update,
+        context=context
     )
 
 
@@ -205,96 +237,81 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # If the callback data starts with the user identifier, handle it accordingly
     elif query.data.startswith(GROUP_IDENTIFIER):
-        # Extract group information from the callback data
         _, group_id, group_name = split_payload(query.data)
 
-        # Retrieve the managers for the selected group
-        async with AsyncClient() as client:
-            response = await client.request(
-                method="GET",
-                url=f"http://{SERVER_URI}/api/group/managers",
-                json={ID_KEY: group_id},
-                headers={
-                    "Authorization": f"Bearer {generate_jwt(get_user_credentials(update))}",
-                    "Content-Type": "application/json",
-                }
-            )
+        response = await make_request(
+            method="GET",
+            url=f"http://{SERVER_URI}/api/group/managers",
+            update=update,
+            json={ID_KEY: group_id}
+        )
 
-        if response.status_code // 100 != 2:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=f"Failed to retrieve managers for group {group_name} {response.status_code}.\n{response.text}"
-            )
+        if await reply_if_error(response, update, context):
             return
 
-        # Create an inline keyboard with the managers
-        managers = response.json()
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    text=f"{manager[MAC_KEY]} ({manager[CREATED_AT_KEY]})",
-                    callback_data=f"{MANAGER_IDENTIFIER}{IDENTIFIER_DELIMITER}{manager[ID_KEY]}{IDENTIFIER_DELIMITER}{manager[MAC_KEY]}"
-                )
-            ] for manager in managers
-        ]
-
         message = f"Managers for group {group_name}:\n"
-        inline_keyboard = InlineKeyboardMarkup(keyboard)
-
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=message,
-            reply_markup=inline_keyboard
+        await send_inline_keyboard(
+            response=response,
+            message=message,
+            identifier=MANAGER_IDENTIFIER,
+            json_id_key=ID_KEY,
+            json_name_key=MAC_KEY,
+            update=update,
+            context=context
         )
 
     # If the callback data starts with the manager identifier, handle it accordingly
     elif query.data.startswith(MANAGER_IDENTIFIER):
-        # Extract manager information from the callback data
         _, manager_id, manager_mac = split_payload(query.data)
 
-        # Retrieve the worker for the selected manager
-        async with AsyncClient() as client:
-            response = await client.request(
-                method="GET",
-                url=f"http://{SERVER_URI}/api/manager/workers",
-                json={ID_KEY: manager_id},
-                headers={
-                    "Authorization": f"Bearer {generate_jwt(get_user_credentials(update))}",
-                    "Content-Type": "application/json",
-                }
-            )
-
-        if response.status_code // 100 != 2:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=f"Failed to retrieve workers for manager {manager_mac} {response.status_code}.\n{response.text}"
-            )
-            return
-
-        # Create an inline keyboard with the workers
-        workers = response.json()
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    text=f"{worker[MAC_KEY]} ({worker[CREATED_AT_KEY]})",
-                    callback_data=f"{WORKER_IDENTIFIER}{IDENTIFIER_DELIMITER}{worker[ID_KEY]}{IDENTIFIER_DELIMITER}{worker[MAC_KEY]}"
-                )
-            ] for worker in workers
-        ]
-
-        message = f"Workers for manager {manager_mac}:\n"
-        inline_keyboard = InlineKeyboardMarkup(keyboard)
-
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=message,
-            reply_markup=inline_keyboard
+        response = await make_request(
+            method="GET", #
+            url=f"http://{SERVER_URI}/api/manager/workers", #
+            update=update,
+            json={ID_KEY: manager_id} #
         )
 
+        if await reply_if_error(response, update, context):
+            return
+
+        message = f"Workers for manager {manager_mac}:\n" #
+        await send_inline_keyboard(
+            response=response,
+            message=message,
+            identifier=WORKER_IDENTIFIER, #
+            json_id_key=ID_KEY,
+            json_name_key=MAC_KEY,
+            update=update,
+            context=context
+        )
 
     # If the callback data starts with the worker identifier, handle it accordingly
     elif query.data.startswith(WORKER_IDENTIFIER):
-        ...
+        _, worker_id, worker_mac = split_payload(query.data)
+
+        response = await make_request(
+            method="GET",
+            url=f"http://{SERVER_URI}/api/worker",
+            update=update,
+            json={ID_KEY: worker_id}
+        )
+
+        if await reply_if_error(response, update, context):
+            print(response.status_code)
+            print(response.text)
+            print(query.data)
+            return
+
+        worker_info = response.json()
+        message = f"Worker {worker_mac} information:\n"
+        message += f"ID: {worker_info[ID_KEY]}\n"
+        message += f"MAC: {worker_info[MAC_KEY]}\n"
+        message += f"Created at: {worker_info[CREATED_AT_KEY]}"
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message
+        )
 
 
 app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
