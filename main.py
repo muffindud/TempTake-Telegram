@@ -103,9 +103,47 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
 
 
+async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_credentials = {
+        "TelegramId": str(update.effective_chat.id),
+        "TelegramUsername": update.effective_chat.username,
+    }
+
+    # Get the groups the user belongs to
+    async with AsyncClient() as client:
+        response = await client.request(
+            method="GET",
+            url=f"http://{SERVER_URI}/api/user/groups",
+            json=user_credentials,
+            headers={
+                "Authorization": f"Bearer {generate_jwt(user_credentials)}",
+                "Content-Type": "application/json",
+            }
+        )
+
+    if response.status_code == 200:
+        groups = response.json()
+        if not groups:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="You are not a member of any groups."
+            )
+            return
+
+        message = "You are a member of the following groups:\n"
+        for group in groups:
+            message += f"- {group['name']} (ID: {group['id']})\n"
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message
+        )
+
+
 app = ApplicationBuilder().token(environ.get("TELEGRAM_BOT_TOKEN")).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("manager", add_manager))
+app.add_handler(CommandHandler("groups", get_user_groups))
 
 if __name__ == "__main__":
     app.run_polling()
