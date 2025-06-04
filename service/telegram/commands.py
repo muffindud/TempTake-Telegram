@@ -6,8 +6,9 @@ from telegram.ext import ContextTypes
 from config import SERVER_URI, URL_PREFIX
 from param.json_params import *
 from param.payload_params import *
+from service.telegram.KeyboardBuilder import KeyboardBuilder
+from service.telegram.buttons import add_module_rows
 
-from service.telegram.buttons import send_inline_keyboard
 from service.telegram.error_handlers import reply_if_error
 from service.temptake.requests import make_request
 from util.security import get_user_credentials
@@ -88,12 +89,17 @@ async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     message = "You are a member of the following groups:\n"
-    await send_inline_keyboard(
-        response=response,
-        message=message,
+
+    keyboard_builder = KeyboardBuilder()
+    keyboard_builder = add_module_rows(
+        json=groups,
         identifier=GROUP_IDENTIFIER,
-        json_id_key=ID_KEY,
-        json_name_key=GROUP_NAME_KEY,
-        update=update,
-        context=context
+        name_key=GROUP_NAME_KEY,
+        keyboard_builder=keyboard_builder
+    )
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message,
+        reply_markup=keyboard_builder.build()
     )
