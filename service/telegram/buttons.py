@@ -1,7 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import SERVER_URI, URL_PREFIX
 from param.json_params import *
 from param.payload_params import *
 from service.telegram.KeyboardBuilder import KeyboardBuilder
@@ -56,7 +55,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         else:
             managers_response = await make_request(
                 method="GET",
-                url=f"{URL_PREFIX}{SERVER_URI}/api/group/managers",
+                endpoint="/api/group/managers",
                 update=update,
                 json={ID_KEY: obj_id}
             )
@@ -72,8 +71,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 identifier=MANAGER_IDENTIFIER,
                 name_key=MAC_KEY,
                 keyboard_builder=keyboard_builder
-            )
-            keyboard_builder.add_row().add_row_button(
+            ).add_row().add_row_button(
                 text="Add Manager",
                 callback_data=f"{GROUP_IDENTIFIER}{IDENTIFIER_DELIMITER}{obj_id}{IDENTIFIER_DELIMITER}add"
             )
@@ -99,14 +97,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         else:
             manager_response = await make_request(
                 method="GET",
-                url=f"{URL_PREFIX}{SERVER_URI}/api/manager",
+                endpoint="/api/manager",
                 update=update,
                 json={ID_KEY: obj_id}
             )
 
             workers_response = await make_request(
                 method="GET",
-                url=f"{URL_PREFIX}{SERVER_URI}/api/manager/workers",
+                endpoint="/api/manager/workers",
                 update=update,
                 json={ID_KEY: obj_id}
             )
@@ -119,6 +117,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             message += f"Created at: {manager_response.json()[CREATED_AT_KEY]}\n"
 
             keyboard_builder = KeyboardBuilder()
+
             keyboard_builder = add_module_rows(
                 json=workers_response.json(),
                 identifier=WORKER_IDENTIFIER,
@@ -153,7 +152,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         else:
             worker_response = await make_request(
                 method="GET",
-                url=f"{URL_PREFIX}{SERVER_URI}/api/worker",
+                endpoint="/api/worker",
                 update=update,
                 json={ID_KEY: obj_id}
             )

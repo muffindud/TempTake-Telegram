@@ -3,7 +3,6 @@ from json import dumps
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import SERVER_URI, URL_PREFIX
 from param.json_params import *
 from param.payload_params import *
 from service.telegram.KeyboardBuilder import KeyboardBuilder
@@ -18,7 +17,7 @@ from util.security import get_user_credentials
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
         method="POST",
-        url=f"{URL_PREFIX}{SERVER_URI}/api/user",
+        endpoint="/api/user",
         update=update,
         json=get_user_credentials(update)
     )
@@ -38,7 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
         method="GET",
-        url=f"{URL_PREFIX}{SERVER_URI}/api/user/groups",
+        endpoint="/api/user/groups",
         update=update,
         json=get_user_credentials(update)
     )
@@ -53,7 +52,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     response = await make_request(
         method="POST",
-        url=f"{URL_PREFIX}{SERVER_URI}/api/group/manager",
+        endpoint="/api/group/manager",
         update=update,
         json=manager
     )
@@ -71,7 +70,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
         method="GET",
-        url=f"{URL_PREFIX}{SERVER_URI}/api/user/groups",
+        endpoint="/api/user/groups",
         update=update,
         json=get_user_credentials(update)
     )
