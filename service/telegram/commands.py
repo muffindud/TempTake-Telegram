@@ -3,6 +3,7 @@ from json import dumps
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from enums.Endpoint import Endpoint
 from enums.JsonIdentifier import *
 from enums.PayloadIdentifier import *
 
@@ -17,7 +18,7 @@ from util.security import get_user_credentials
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
         method="POST",
-        endpoint="/api/user",
+        endpoint=Endpoint.USER,
         update=update,
         json=get_user_credentials(update)
     )
@@ -37,7 +38,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
         method="GET",
-        endpoint="/api/user/groups",
+        endpoint=Endpoint.USER_GROUPS,
         update=update,
         json=get_user_credentials(update)
     )
@@ -52,7 +53,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     response = await make_request(
         method="POST",
-        endpoint="/api/group/manager",
+        endpoint=Endpoint.GROUP_MANAGER,
         update=update,
         json=manager
     )
@@ -70,7 +71,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
         method="GET",
-        endpoint="/api/user/groups",
+        endpoint=Endpoint.USER_GROUPS,
         update=update,
         json=get_user_credentials(update)
     )
