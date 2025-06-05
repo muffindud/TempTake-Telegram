@@ -5,6 +5,7 @@ from telegram.ext import ContextTypes
 
 from enums.Endpoint import Endpoint
 from enums.JsonIdentifier import *
+from enums.Method import Method
 from enums.PayloadIdentifier import *
 
 from service.telegram.KeyboardBuilder import KeyboardBuilder
@@ -17,7 +18,7 @@ from util.security import get_user_credentials
 # Register a new user
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
-        method="POST",
+        method=Method.POST,
         endpoint=Endpoint.USER,
         update=update,
         json=get_user_credentials(update)
@@ -36,29 +37,29 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # Add a manager to the user's group
 async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    response = await make_request(
-        method="GET",
+    group_response = await make_request(
+        method=Method.GET,
         endpoint=Endpoint.USER_GROUPS,
         update=update,
         json=get_user_credentials(update)
     )
 
-    if await reply_if_error(response, update, context):
+    if await reply_if_error(group_response, update, context):
         return
 
     manager = {
-        "GroupId": response.json()[0][JsonIdentifier.ID_KEY.value],
+        "GroupId": group_response.json()[0][JsonIdentifier.ID_KEY.value],
         "ManagerMac": context.args[0].upper(),
     }
 
-    response = await make_request(
-        method="POST",
+    group_response = await make_request(
+        method=Method.POST,
         endpoint=Endpoint.GROUP_MANAGER,
         update=update,
         json=manager
     )
 
-    if await reply_if_error(response, update, context):
+    if await reply_if_error(group_response, update, context):
         return
 
     await context.bot.send_message(
@@ -70,7 +71,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # Get the groups the user is a member of
 async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await make_request(
-        method="GET",
+        method=Method.GET,
         endpoint=Endpoint.USER_GROUPS,
         update=update,
         json=get_user_credentials(update)

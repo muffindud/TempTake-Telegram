@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 
 from enums.Endpoint import Endpoint
 from enums.JsonIdentifier import *
+from enums.Method import Method
 from enums.PayloadIdentifier import *
 
 from service.telegram.KeyboardBuilder import KeyboardBuilder
@@ -143,7 +144,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
         else:
             managers_response = await make_request(
-                method="GET",
+                method=Method.GET,
                 endpoint=Endpoint.GROUP_MANAGERS,
                 update=update,
                 json={JsonIdentifier.ID_KEY.value: obj_id}
@@ -174,14 +175,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
         else:
             manager_response = await make_request(
-                method="GET",
+                method=Method.GET,
                 endpoint=Endpoint.MANAGER,
                 update=update,
                 json={JsonIdentifier.ID_KEY.value: obj_id}
             )
 
             workers_response = await make_request(
-                method="GET",
+                method=Method.GET,
                 endpoint=Endpoint.MANAGER_WORKERS,
                 update=update,
                 json={JsonIdentifier.ID_KEY.value: obj_id}
@@ -211,7 +212,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
         else:
             worker_response = await make_request(
-                method="GET",
+                method=Method.GET,
                 endpoint=Endpoint.WORKER,
                 update=update,
                 json={JsonIdentifier.ID_KEY.value: obj_id}
