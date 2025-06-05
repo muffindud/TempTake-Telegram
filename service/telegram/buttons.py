@@ -1,8 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from param.json_params import *
-from param.payload_params import *
+from enums.JsonIdentifier import *
+from enums.PayloadIdentifier import *
 
 from service.telegram.KeyboardBuilder import KeyboardBuilder
 from service.telegram.error_handlers import reply_if_error
@@ -113,7 +113,7 @@ async def send_menu_for_worker(
 
 
 async def send_data_for_period(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, start_timestamp: str, end_timestamp: str, module
+    update: Update, context: ContextTypes.DEFAULT_TYPE, start_timestamp: str, end_timestamp: str,
 ):
     ...
 

@@ -3,8 +3,8 @@ from json import dumps
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from param.json_params import *
-from param.payload_params import *
+from enums.JsonIdentifier import *
+from enums.PayloadIdentifier import *
 
 from service.telegram.KeyboardBuilder import KeyboardBuilder
 from service.telegram.buttons import add_module_rows

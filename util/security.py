@@ -2,9 +2,8 @@ from datetime import datetime, timezone
 from jwt import encode
 from telegram import Update
 
-from param.jwt_params import *
-from param.json_params import *
-from config import INTERNAL_SECRET
+from enums.JsonIdentifier import *
+from config import INTERNAL_SECRET, TOKEN_EXPIRATION
 
 
 # Generate a JWT token for the user

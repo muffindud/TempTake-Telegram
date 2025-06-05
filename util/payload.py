@@ -1,4 +1,4 @@
-from param.payload_params import *
+from enums.PayloadIdentifier import *
 
 
 # Split the payload into its components
