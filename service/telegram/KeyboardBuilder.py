@@ -1,5 +1,3 @@
-from collections.abc import Sequence
-
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 
