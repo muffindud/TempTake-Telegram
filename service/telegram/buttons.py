@@ -21,6 +21,20 @@ def add_module_rows(json: list, identifier: str, name_key: str, keyboard_builder
     return keyboard_builder
 
 
+def add_module_interactions(
+    json: dict, identifier: str, keyboard_builder: KeyboardBuilder
+) -> KeyboardBuilder:
+    keyboard_builder.add_row()
+    keyboard_builder.add_row_button(
+        text="Get Day Data",
+        callback_data=f"{identifier}{IDENTIFIER_DELIMITER}{json[ID_KEY]}{IDENTIFIER_DELIMITER}day"
+    ).add_row_button(
+        text="Get Select Data",
+        callback_data=f"{identifier}{IDENTIFIER_DELIMITER}{json[ID_KEY]}{IDENTIFIER_DELIMITER}select"
+    )
+    return keyboard_builder
+
+
 # Handle button clicks for the inline keyboard
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -110,12 +124,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 identifier=WORKER_IDENTIFIER,
                 name_key=MAC_KEY,
                 keyboard_builder=keyboard_builder
-            ).add_row().add_row_button(
-                text="Get Day Data",
-                callback_data=f"{MANAGER_IDENTIFIER}{IDENTIFIER_DELIMITER}{obj_id}{IDENTIFIER_DELIMITER}day"
-            ).add_row_button(
-                text="Get Select Data",
-                callback_data=f"{MANAGER_IDENTIFIER}{IDENTIFIER_DELIMITER}{obj_id}{IDENTIFIER_DELIMITER}select"
+            )
+
+            keyboard_builder = add_module_interactions(
+                json=manager_response.json(),
+                identifier=MANAGER_IDENTIFIER,
+                keyboard_builder=keyboard_builder
             )
 
             await context.bot.send_message(
@@ -153,12 +167,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             message += f"Created at: {worker_info[CREATED_AT_KEY]}"
 
             keyboard_builder = KeyboardBuilder()
-            keyboard_builder.add_row().add_row_button(
-                text="Get Day Data",
-                callback_data=f"{WORKER_IDENTIFIER}{IDENTIFIER_DELIMITER}{obj_id}{IDENTIFIER_DELIMITER}day"
-            ).add_row_button(
-                text="Get Select Data",
-                callback_data=f"{WORKER_IDENTIFIER}{IDENTIFIER_DELIMITER}{obj_id}{IDENTIFIER_DELIMITER}select"
+            keyboard_builder = add_module_interactions(
+                json=worker_info,
+                identifier=WORKER_IDENTIFIER,
+                keyboard_builder=keyboard_builder
             )
 
             await context.bot.send_message(
