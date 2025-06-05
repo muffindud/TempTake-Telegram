@@ -9,3 +9,5 @@ class JsonIdentifier(Enum):
     CREATED_AT_KEY = "createdAt"
     DELETED_AT_KEY = "deletedAt"
     MAC_KEY = "mac"
+    START_TIMESTAMP_KEY = "from"
+    END_TIMESTAMP_KEY = "to"

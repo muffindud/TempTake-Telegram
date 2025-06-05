@@ -1,3 +1,5 @@
+import datetime
+
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -113,11 +115,35 @@ async def send_menu_for_worker(
         reply_markup=keyboard_builder.build()
     )
 
+def get_iso(datetime_to_convert: datetime.datetime) -> str:
+    return datetime_to_convert.isoformat(timespec="seconds")
+
 
 async def send_data_for_period(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, start_timestamp: str, end_timestamp: str,
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    identifier: PayloadIdentifier,
+    module_id: str,
+    start_timestamp: str = get_iso(datetime.datetime.now() - datetime.timedelta(days=1)),
+    end_timestamp: str = get_iso(datetime.datetime.now())
 ):
-    ...
+    ep = Endpoint.ENTRY_WORKER if identifier == PayloadIdentifier.WORKER_IDENTIFIER else Endpoint.ENTRY_MANAGER
+
+    entries_response = await make_request(
+        method=Method.GET,
+        endpoint=ep,
+        update=update,
+        json={
+            JsonIdentifier.ID_KEY.value: int(module_id),
+            JsonIdentifier.START_TIMESTAMP_KEY.value: start_timestamp,
+            JsonIdentifier.END_TIMESTAMP_KEY.value: end_timestamp
+        }
+    )
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Data for period from {start_timestamp} to {end_timestamp}:\n{entries_response.text}"
+    )
 
 
 # day command
@@ -164,9 +190,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # If the callback data starts with the manager identifier, handle it accordingly
     elif obj_identifier == PayloadIdentifier.MANAGER_IDENTIFIER:
         if obj_name == "day":
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=query.data
+            # await context.bot.send_message(
+            #     chat_id=update.effective_chat.id,
+            #     text=query.data
+            # )
+            await send_data_for_period(
+                update=update,
+                context=context,
+                module_id=obj_id,
+                identifier=PayloadIdentifier.MANAGER_IDENTIFIER
             )
         elif obj_name == "select":
             await context.bot.send_message(
@@ -201,9 +233,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # If the callback data starts with the worker identifier, handle it accordingly
     elif obj_identifier == PayloadIdentifier.WORKER_IDENTIFIER:
         if obj_name == "day":
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=query.data
+            # await context.bot.send_message(
+            #     chat_id=update.effective_chat.id,
+            #     text=query.data
+            # )
+            await send_data_for_period(
+                update=update,
+                context=context,
+                module_id=obj_id,
+                identifier=PayloadIdentifier.WORKER_IDENTIFIER
             )
         elif obj_name == "select":
             await context.bot.send_message(

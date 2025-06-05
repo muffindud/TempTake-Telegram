@@ -10,3 +10,6 @@ class Endpoint(Enum):
     MANAGER = "/api/manager"
     MANAGER_WORKERS = "/api/manager/workers"
     WORKER = "/api/worker"
+    ENTRY = "/api/entry"
+    ENTRY_WORKER = "/api/entry/worker"
+    ENTRY_MANAGER = "/api/entry/manager"
