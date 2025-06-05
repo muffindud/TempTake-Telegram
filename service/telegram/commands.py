@@ -5,9 +5,9 @@ from telegram.ext import ContextTypes
 
 from param.json_params import *
 from param.payload_params import *
+
 from service.telegram.KeyboardBuilder import KeyboardBuilder
 from service.telegram.buttons import add_module_rows
-
 from service.telegram.error_handlers import reply_if_error
 from service.temptake.requests import make_request
 from util.security import get_user_credentials
@@ -46,7 +46,7 @@ async def add_manager(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     manager = {
-        "GroupId": response.json()[0][ID_KEY],
+        "GroupId": response.json()[0][JsonIdentifier.ID_KEY.value],
         "ManagerMac": context.args[0].upper(),
     }
 
@@ -92,8 +92,8 @@ async def get_user_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     keyboard_builder = KeyboardBuilder()
     keyboard_builder = add_module_rows(
         json=groups,
-        identifier=GROUP_IDENTIFIER,
-        name_key=GROUP_NAME_KEY,
+        identifier=PayloadIdentifier.GROUP_IDENTIFIER,
+        name_key=JsonIdentifier.GROUP_NAME_KEY,
         keyboard_builder=keyboard_builder
     )
 

@@ -7,9 +7,9 @@ from config import TELEGRAM_BOT_TOKEN
 from param.command_params import *
 
 app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-app.add_handler(CommandHandler(START_COMMAND, start))
-app.add_handler(CommandHandler(MANAGER_COMMAND, add_manager))
-app.add_handler(CommandHandler(GROUPS_COMMAND, get_user_groups))
+app.add_handler(CommandHandler(CommandTarget.START_COMMAND.value, start))
+app.add_handler(CommandHandler(CommandTarget.MANAGER_COMMAND.value, add_manager))
+app.add_handler(CommandHandler(CommandTarget.GROUPS_COMMAND.value, get_user_groups))
 app.add_handler(CallbackQueryHandler(button_handler))
 
 if __name__ == "__main__":

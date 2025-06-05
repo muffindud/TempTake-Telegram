@@ -10,8 +10,8 @@ from config import INTERNAL_SECRET
 # Generate a JWT token for the user
 def generate_jwt(user_credentials: dict[str, str]) -> str:
     payload = {
-        "TelegramId": user_credentials[TELEGRAM_ID_KEY],
-        "TelegramUsername": user_credentials[TELEGRAM_USERNAME_KEY],
+        "TelegramId": user_credentials[JsonIdentifier.TELEGRAM_ID_KEY.value],
+        "TelegramUsername": user_credentials[JsonIdentifier.TELEGRAM_USERNAME_KEY.value],
         "exp": datetime.now(timezone.utc) + TOKEN_EXPIRATION,
     }
 
@@ -27,6 +27,6 @@ def generate_jwt(user_credentials: dict[str, str]) -> str:
 # Get user credentials from the update object
 def get_user_credentials(update: Update) -> dict[str, str]:
     return {
-        TELEGRAM_ID_KEY: str(update.effective_chat.id),
-        TELEGRAM_USERNAME_KEY: update.effective_chat.username,
+        JsonIdentifier.TELEGRAM_ID_KEY.value: str(update.effective_chat.id),
+        JsonIdentifier.TELEGRAM_USERNAME_KEY.value: update.effective_chat.username,
     }

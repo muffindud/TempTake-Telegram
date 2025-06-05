@@ -3,33 +3,38 @@ from telegram.ext import ContextTypes
 
 from param.json_params import *
 from param.payload_params import *
-from service.telegram.KeyboardBuilder import KeyboardBuilder
 
+from service.telegram.KeyboardBuilder import KeyboardBuilder
 from service.telegram.error_handlers import reply_if_error
 from service.temptake.requests import make_request
-from util.payload_decode import split_payload
+from util.payload import split_payload, create_payload
 
 
-def add_module_rows(json: list, identifier: str, name_key: str, keyboard_builder: KeyboardBuilder) -> KeyboardBuilder:
+def add_module_rows(
+        json: list,
+        identifier: PayloadIdentifier,
+        name_key: JsonIdentifier,
+        keyboard_builder: KeyboardBuilder
+) -> KeyboardBuilder:
     for row in json:
         keyboard_builder.add_row()
         keyboard_builder.add_row_button(
-            text=f"{row[name_key]}",
-            callback_data=f"{identifier}{IDENTIFIER_DELIMITER}{row[ID_KEY]}{IDENTIFIER_DELIMITER}{row[name_key]}"
+            text=f"{row[name_key.value]}",
+            callback_data=create_payload(identifier, row[JsonIdentifier.ID_KEY.value], row[name_key.value])
         )
     return keyboard_builder
 
 
 def add_module_interactions(
-    json: dict, identifier: str, keyboard_builder: KeyboardBuilder
+    json: dict, identifier: PayloadIdentifier, keyboard_builder: KeyboardBuilder
 ) -> KeyboardBuilder:
     keyboard_builder.add_row()
     keyboard_builder.add_row_button(
         text="Get Day Data",
-        callback_data=f"{identifier}{IDENTIFIER_DELIMITER}{json[ID_KEY]}{IDENTIFIER_DELIMITER}day"
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "day")
     ).add_row_button(
         text="Get Select Data",
-        callback_data=f"{identifier}{IDENTIFIER_DELIMITER}{json[ID_KEY]}{IDENTIFIER_DELIMITER}select"
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "select")
     )
     return keyboard_builder
 
@@ -42,12 +47,12 @@ async def send_menu_for_group(
     keyboard_builder = KeyboardBuilder()
     keyboard_builder = add_module_rows(
         json=managers_list,
-        identifier=MANAGER_IDENTIFIER,
-        name_key=MAC_KEY,
+        identifier=PayloadIdentifier.MANAGER_IDENTIFIER,
+        name_key=JsonIdentifier.MAC_KEY,
         keyboard_builder=keyboard_builder
     ).add_row().add_row_button(
         text="Add Manager",
-        callback_data=f"{GROUP_IDENTIFIER}{IDENTIFIER_DELIMITER}{group_id}{IDENTIFIER_DELIMITER}add"
+        callback_data=create_payload(PayloadIdentifier.GROUP_IDENTIFIER, group_id, "add")
     )
 
     await context.bot.send_message(
@@ -60,22 +65,22 @@ async def send_menu_for_group(
 async def send_menu_for_manager(
     update: Update, context: ContextTypes.DEFAULT_TYPE, workers_list: list, manager_response: dict
 ):
-    message = f"Manager {manager_response[MAC_KEY]} information:\n"
-    message += f"ID: {manager_response[ID_KEY]}\n"
-    message += f"Created at: {manager_response[CREATED_AT_KEY]}\n"
+    message = f"Manager {manager_response[JsonIdentifier.MAC_KEY.value]} information:\n"
+    message += f"ID: {manager_response[JsonIdentifier.ID_KEY.value]}\n"
+    message += f"Created at: {manager_response[JsonIdentifier.CREATED_AT_KEY.value]}\n"
 
     keyboard_builder = KeyboardBuilder()
 
     keyboard_builder = add_module_rows(
         json=workers_list,
-        identifier=WORKER_IDENTIFIER,
-        name_key=MAC_KEY,
+        identifier=PayloadIdentifier.WORKER_IDENTIFIER,
+        name_key=JsonIdentifier.MAC_KEY,
         keyboard_builder=keyboard_builder
     )
 
     keyboard_builder = add_module_interactions(
         json=manager_response,
-        identifier=MANAGER_IDENTIFIER,
+        identifier=PayloadIdentifier.MANAGER_IDENTIFIER,
         keyboard_builder=keyboard_builder
     )
 
@@ -89,14 +94,14 @@ async def send_menu_for_manager(
 async def send_menu_for_worker(
     update: Update, context: ContextTypes.DEFAULT_TYPE, worker_response: dict
 ):
-    message = f"Worker {worker_response[MAC_KEY]} information:\n"
-    message += f"ID: {worker_response[ID_KEY]}\n"
-    message += f"Created at: {worker_response[CREATED_AT_KEY]}"
+    message = f"Worker {worker_response[JsonIdentifier.MAC_KEY.value]} information:\n"
+    message += f"ID: {worker_response[JsonIdentifier.ID_KEY.value]}\n"
+    message += f"Created at: {worker_response[JsonIdentifier.CREATED_AT_KEY.value]}"
 
     keyboard_builder = KeyboardBuilder()
     keyboard_builder = add_module_interactions(
         json=worker_response,
-        identifier=WORKER_IDENTIFIER,
+        identifier=PayloadIdentifier.WORKER_IDENTIFIER,
         keyboard_builder=keyboard_builder
     )
 
@@ -107,19 +112,29 @@ async def send_menu_for_worker(
     )
 
 
+async def send_data_for_period(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, start_timestamp: str, end_timestamp: str, module
+):
+    ...
+
+
+# day command
+async def send_day_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    ...
+
 # Handle button clicks for the inline keyboard
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
 
-    _, obj_id, obj_name = split_payload(query.data)
+    obj_identifier, obj_id, obj_name = split_payload(query.data)
 
     # Check if the callback data starts with the group identifier
-    if query.data.startswith(USER_IDENTIFIER):
+    if obj_identifier == PayloadIdentifier.USER_IDENTIFIER:
         ...
 
     # If the callback data starts with the user identifier, handle it accordingly
-    elif query.data.startswith(GROUP_IDENTIFIER):
+    elif obj_identifier == PayloadIdentifier.GROUP_IDENTIFIER:
         if obj_name == "add":
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -130,7 +145,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 method="GET",
                 endpoint="/api/group/managers",
                 update=update,
-                json={ID_KEY: obj_id}
+                json={JsonIdentifier.ID_KEY.value: obj_id}
             )
 
             if await reply_if_error(managers_response, update, context):
@@ -145,7 +160,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
 
     # If the callback data starts with the manager identifier, handle it accordingly
-    elif query.data.startswith(MANAGER_IDENTIFIER):
+    elif obj_identifier == PayloadIdentifier.MANAGER_IDENTIFIER:
         if obj_name == "day":
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -161,14 +176,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 method="GET",
                 endpoint="/api/manager",
                 update=update,
-                json={ID_KEY: obj_id}
+                json={JsonIdentifier.ID_KEY.value: obj_id}
             )
 
             workers_response = await make_request(
                 method="GET",
                 endpoint="/api/manager/workers",
                 update=update,
-                json={ID_KEY: obj_id}
+                json={JsonIdentifier.ID_KEY.value: obj_id}
             )
 
             if await reply_if_error(workers_response, update, context):
@@ -182,7 +197,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
 
     # If the callback data starts with the worker identifier, handle it accordingly
-    elif query.data.startswith(WORKER_IDENTIFIER):
+    elif obj_identifier == PayloadIdentifier.WORKER_IDENTIFIER:
         if obj_name == "day":
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -198,7 +213,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 method="GET",
                 endpoint="/api/worker",
                 update=update,
-                json={ID_KEY: obj_id}
+                json={JsonIdentifier.ID_KEY.value: obj_id}
             )
 
             if await reply_if_error(worker_response, update, context):
