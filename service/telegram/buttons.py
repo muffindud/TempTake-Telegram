@@ -1,4 +1,5 @@
 import datetime
+from json import dumps
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -169,24 +170,11 @@ async def send_last_entry_data(
 
     entries_json = entries_response.json()
 
-    if not entries_json:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="No entries found."
-        )
-        return
-
-    last_entry = entries_json[-1]
-    message = f"Last entry for {last_entry[JsonIdentifier.MAC_KEY.value]}:\n"
-    message += f"ID: {last_entry[JsonIdentifier.ID_KEY.value]}\n"
-    message += f"Created at: {last_entry[JsonIdentifier.CREATED_AT_KEY.value]}\n"
-    message += f"Deleted at: {last_entry[JsonIdentifier.DELETED_AT_KEY.value]}"
-
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=message
+        parse_mode="MarkdownV2",
+        text=f"```\n{dumps(entries_json, indent=4)}\n```"
     )
-
 
 # day command
 async def send_day_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
