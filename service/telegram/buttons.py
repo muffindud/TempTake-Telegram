@@ -4,6 +4,7 @@ from json import dumps
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from enums.ButtonAction import ButtonAction
 from enums.Endpoint import Endpoint
 from enums.JsonIdentifier import *
 from enums.Method import Method
@@ -36,13 +37,13 @@ def add_module_interactions(
     keyboard_builder.add_row()
     keyboard_builder.add_row_button(
         text="Get Day Data",
-        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "day")
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], ButtonAction.ADD)
     ).add_row_button(
         text="Get Select Data",
-        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "select")
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], ButtonAction.SELECT)
     ).add_row_button(
         text="Last Entry",
-        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "last")
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], ButtonAction.LAST)
     )
     return keyboard_builder
 
@@ -60,7 +61,7 @@ async def send_menu_for_group(
         keyboard_builder=keyboard_builder
     ).add_row().add_row_button(
         text="Add Manager",
-        callback_data=create_payload(PayloadIdentifier.GROUP_IDENTIFIER, group_id, "add")
+        callback_data=create_payload(PayloadIdentifier.GROUP_IDENTIFIER, group_id, ButtonAction.ADD)
     )
 
     await context.bot.send_message(
@@ -144,9 +145,13 @@ async def send_data_for_period(
         }
     )
 
+    if await reply_if_error(entries_response, update, context):
+        return
+
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Data for period from {start_timestamp} to {end_timestamp}:\n{entries_response.text}"
+        parse_mode="MarkdownV2",
+        text=f"Data for period from {start_timestamp} to {end_timestamp}:\n```json\n{entries_response.text}\n```"
     )
 
 

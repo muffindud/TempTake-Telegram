@@ -1,3 +1,4 @@
+from enums.ButtonAction import ButtonAction
 from enums.PayloadIdentifier import *
 
 
@@ -7,5 +8,7 @@ def split_payload(payload: str) -> tuple[PayloadIdentifier, str, str]:
     return PayloadIdentifier(payload_identifier), obj_id, obj_name
 
 
-def create_payload(identifier: PayloadIdentifier, obj_id: str, obj_name: str) -> str:
-    return f"{identifier.value}{IDENTIFIER_DELIMITER}{obj_id}{IDENTIFIER_DELIMITER}{obj_name}"
+def create_payload(identifier: PayloadIdentifier, obj_id: str, button_action: ButtonAction | str) -> str:
+    if isinstance(button_action, ButtonAction):
+        button_action = button_action.value
+    return f"{identifier.value}{IDENTIFIER_DELIMITER}{obj_id}{IDENTIFIER_DELIMITER}{button_action}"
