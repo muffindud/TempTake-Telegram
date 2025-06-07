@@ -39,6 +39,9 @@ def add_module_interactions(
     ).add_row_button(
         text="Get Select Data",
         callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "select")
+    ).add_row_button(
+        text="Last Entry",
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "last"
     )
     return keyboard_builder
 
@@ -146,6 +149,45 @@ async def send_data_for_period(
     )
 
 
+async def send_last_entry_data(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    identifier: PayloadIdentifier,
+    module_id: str
+):
+    ep = Endpoint.ENTRY_WORKER_LAST if identifier == PayloadIdentifier.WORKER_IDENTIFIER else Endpoint.ENTRY_MANAGER_LAST
+
+    entries_response = await make_request(
+        method=Method.GET,
+        endpoint=ep,
+        update=update,
+        json={JsonIdentifier.ID_KEY.value: int(module_id)}
+    )
+
+    if await reply_if_error(entries_response, update, context):
+        return
+
+    entries_json = entries_response.json()
+
+    if not entries_json:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="No entries found."
+        )
+        return
+
+    last_entry = entries_json[-1]
+    message = f"Last entry for {last_entry[JsonIdentifier.MAC_KEY.value]}:\n"
+    message += f"ID: {last_entry[JsonIdentifier.ID_KEY.value]}\n"
+    message += f"Created at: {last_entry[JsonIdentifier.CREATED_AT_KEY.value]}\n"
+    message += f"Deleted at: {last_entry[JsonIdentifier.DELETED_AT_KEY.value]}"
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message
+    )
+
+
 # day command
 async def send_day_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     ...
@@ -205,6 +247,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 chat_id=update.effective_chat.id,
                 text=query.data
             )
+        elif obj_name == "last":
+            await send_last_entry_data(
+                update=update,
+                context=context,
+                module_id=obj_id,
+                identifier=PayloadIdentifier.MANAGER_IDENTIFIER
+            )
         else:
             manager_response = await make_request(
                 method=Method.GET,
@@ -247,6 +296,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=query.data
+            )
+        elif obj_name == "last":
+            await send_last_entry_data(
+                update=update,
+                context=context,
+                module_id=obj_id,
+                identifier=PayloadIdentifier.WORKER_IDENTIFIER
             )
         else:
             worker_response = await make_request(
