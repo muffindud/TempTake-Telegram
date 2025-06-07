@@ -41,7 +41,7 @@ def add_module_interactions(
         callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "select")
     ).add_row_button(
         text="Last Entry",
-        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "last"
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], "last")
     )
     return keyboard_builder
 
