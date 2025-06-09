@@ -37,7 +37,7 @@ def add_module_interactions(
     keyboard_builder.add_row()
     keyboard_builder.add_row_button(
         text="Get Day Data",
-        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], ButtonAction.ADD)
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], ButtonAction.DAY)
     ).add_row_button(
         text="Get Select Data",
         callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], ButtonAction.SELECT)
@@ -148,10 +148,13 @@ async def send_data_for_period(
     if await reply_if_error(entries_response, update, context):
         return
 
+    message = f"Data for period from {start_timestamp} to {end_timestamp}:\n```json\n{dumps(entries_response.json(), indent=4)}\n```"
+    message = message.replace("-", "\\-")
+
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         parse_mode="MarkdownV2",
-        text=f"Data for period from {start_timestamp} to {end_timestamp}:\n```json\n{entries_response.text}\n```"
+        text=message
     )
 
 
@@ -198,7 +201,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # If the callback data starts with the user identifier, handle it accordingly
     elif obj_identifier == PayloadIdentifier.GROUP_IDENTIFIER:
-        if obj_name == "add":
+        if obj_name == ButtonAction.ADD:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=query.data
@@ -224,23 +227,20 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # If the callback data starts with the manager identifier, handle it accordingly
     elif obj_identifier == PayloadIdentifier.MANAGER_IDENTIFIER:
-        if obj_name == "day":
-            # await context.bot.send_message(
-            #     chat_id=update.effective_chat.id,
-            #     text=query.data
-            # )
+        if obj_name == ButtonAction.DAY:
             await send_data_for_period(
                 update=update,
                 context=context,
                 module_id=obj_id,
                 identifier=PayloadIdentifier.MANAGER_IDENTIFIER
             )
-        elif obj_name == "select":
+        elif obj_name == ButtonAction.SELECT:
+            # TODO: Implement select data functionality
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=query.data
             )
-        elif obj_name == "last":
+        elif obj_name == ButtonAction.LAST:
             await send_last_entry_data(
                 update=update,
                 context=context,
@@ -274,23 +274,20 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # If the callback data starts with the worker identifier, handle it accordingly
     elif obj_identifier == PayloadIdentifier.WORKER_IDENTIFIER:
-        if obj_name == "day":
-            # await context.bot.send_message(
-            #     chat_id=update.effective_chat.id,
-            #     text=query.data
-            # )
+        if obj_name == ButtonAction.DAY:
             await send_data_for_period(
                 update=update,
                 context=context,
                 module_id=obj_id,
                 identifier=PayloadIdentifier.WORKER_IDENTIFIER
             )
-        elif obj_name == "select":
+        elif obj_name == ButtonAction.SELECT:
+            # TODO: Implement select data functionality
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=query.data
             )
-        elif obj_name == "last":
+        elif obj_name == ButtonAction.LAST:
             await send_last_entry_data(
                 update=update,
                 context=context,
