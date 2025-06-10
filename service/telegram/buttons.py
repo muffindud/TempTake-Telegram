@@ -129,9 +129,15 @@ async def send_data_for_period(
     context: ContextTypes.DEFAULT_TYPE,
     identifier: PayloadIdentifier,
     module_id: str,
-    start_timestamp: str = get_iso(datetime.datetime.now() - datetime.timedelta(days=1)),
-    end_timestamp: str = get_iso(datetime.datetime.now())
+    start_timestamp: str = None,
+    end_timestamp: str = None
 ):
+    if start_timestamp is None:
+        start_timestamp = get_iso(datetime.datetime.now() - datetime.timedelta(days=1))
+
+    if end_timestamp is None:
+        end_timestamp = get_iso(datetime.datetime.now())
+
     ep = Endpoint.ENTRY_WORKER if identifier == PayloadIdentifier.WORKER_IDENTIFIER else Endpoint.ENTRY_MANAGER
 
     entries_response = await make_request(
