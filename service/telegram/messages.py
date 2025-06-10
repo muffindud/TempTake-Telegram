@@ -44,7 +44,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         response = await make_request(
             method=Method.POST,
-            endpoint=Endpoint.WORKER,
+            endpoint=Endpoint.MANAGER_WORKER,
             update=update,
             json=worker
         )

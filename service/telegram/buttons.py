@@ -220,9 +220,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # If the callback data starts with the user identifier, handle it accordingly
     elif obj_identifier == PayloadIdentifier.GROUP_IDENTIFIER:
         if obj_name == ButtonAction.ADD:
+            awaiting_manager_mac[update.effective_chat.id] = int(obj_id)
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=query.data
+                text="Please provide the MAC address of the manager to add."
             )
         else:
             managers_response = await make_request(

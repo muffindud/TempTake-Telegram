@@ -8,6 +8,7 @@ class Endpoint(Enum):
     GROUP_MANAGER = "/api/group/manager"
     GROUP_MANAGERS = "/api/group/managers"
     MANAGER = "/api/manager"
+    MANAGER_WORKER = "/api/manager/worker"
     MANAGER_WORKERS = "/api/manager/workers"
     WORKER = "/api/worker"
     ENTRY = "/api/entry"
