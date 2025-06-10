@@ -6,3 +6,4 @@ class ButtonAction(Enum):
     DAY = "day"
     SELECT = "select"
     LAST = "last"
+    DELETE = "delete"

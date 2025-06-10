@@ -52,6 +52,12 @@ def add_module_interactions(
         text="Last Entry",
         callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], ButtonAction.LAST)
     )
+
+    keyboard_builder.add_row().add_row_button(
+        text="Delete",
+        callback_data=create_payload(identifier, json[JsonIdentifier.ID_KEY.value], ButtonAction.DELETE)
+    )
+
     return keyboard_builder
 
 
@@ -272,6 +278,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 chat_id=update.effective_chat.id,
                 text="Please provide the MAC address of the worker to add."
             )
+        elif obj_name == ButtonAction.DELETE:
+            response = await make_request(
+                method=Method.DELETE,
+                endpoint=Endpoint.MANAGER,
+                update=update,
+                json={JsonIdentifier.ID_KEY.value: obj_id}
+            )
+
+            if await reply_if_error(response, update, context):
+                return
+
+            if response.is_success:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=f"Manager with ID {obj_id} deleted successfully."
+                )
         else:
             manager_response = await make_request(
                 method=Method.GET,
@@ -319,6 +341,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 module_id=obj_id,
                 identifier=PayloadIdentifier.WORKER_IDENTIFIER
             )
+        elif obj_name == ButtonAction.DELETE:
+            response = await make_request(
+                method=Method.DELETE,
+                endpoint=Endpoint.WORKER,
+                update=update,
+                json={JsonIdentifier.ID_KEY.value: obj_id}
+            )
+
+            if await reply_if_error(response, update, context):
+                return
+
+            if response.is_success:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=f"Worker with ID {obj_id} deleted successfully."
+                )
         else:
             worker_response = await make_request(
                 method=Method.GET,
