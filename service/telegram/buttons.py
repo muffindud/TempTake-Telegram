@@ -16,6 +16,13 @@ from service.temptake.requests import make_request
 from util.payload import split_payload, create_payload
 
 
+# Dict of IDs waiting for a worker to be added pointing to the manager's ID
+awaiting_worker_mac: dict[int, int] = {}
+
+# Dict of IDs waiting for a manager to be added pointing to the group's ID
+awaiting_manager_mac: dict[int, int] = {}
+
+
 def add_module_rows(
         json: list,
         identifier: PayloadIdentifier,
@@ -91,6 +98,11 @@ async def send_menu_for_manager(
         json=manager_response,
         identifier=PayloadIdentifier.MANAGER_IDENTIFIER,
         keyboard_builder=keyboard_builder
+    )
+
+    keyboard_builder = keyboard_builder.add_row().add_row_button(
+        text="Add Worker",
+        callback_data=create_payload(PayloadIdentifier.MANAGER_IDENTIFIER, manager_response[JsonIdentifier.ID_KEY.value], ButtonAction.ADD)
     )
 
     await context.bot.send_message(
@@ -252,6 +264,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 context=context,
                 module_id=obj_id,
                 identifier=PayloadIdentifier.MANAGER_IDENTIFIER
+            )
+        elif obj_name == ButtonAction.ADD:
+            awaiting_worker_mac[update.effective_chat.id] = int(obj_id)
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Please provide the MAC address of the worker to add."
             )
         else:
             manager_response = await make_request(
