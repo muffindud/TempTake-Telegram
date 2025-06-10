@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from buttons import awaiting_worker_mac, awaiting_manager_mac
+from service.telegram.buttons import awaiting_worker_mac, awaiting_manager_mac
 from service.telegram.error_handlers import reply_if_error
 from service.temptake.requests import make_request
 from enums.JsonIdentifier import JsonIdentifier
